@@ -47,6 +47,111 @@ The API will have the following endpoints:
 - `PUT /api/products/:id`: Update a product
 - `DELETE /api/products/:id`: Delete a product
 
+## Middleware
+
+This API uses the following custom middleware:
+
+- **Request Logging**: Logs every request with timestamp, HTTP method, and URL to the console.
+- **Authentication**: Requires an `x-api-key` header with the value `my-secret-key` for all API requests. Requests without a valid key receive a 401 Unauthorized error.
+- **Validation**: For `POST` and `PUT` requests to `/api/products`, the request body must include all required product fields (`name`, `description`, `price`, `category`, `inStock`). If any are missing, a 400 Bad Request error is returned.
+
+### Example: Required Headers
+
+```
+GET /api/products HTTP/1.1
+Host: localhost:3000
+x-api-key: my-secret-key
+```
+
+### Example: Validation Error Response
+
+```
+POST /api/products
+Content-Type: application/json
+x-api-key: my-secret-key
+
+{
+  "name": "Tablet"
+}
+```
+Response:
+```
+{
+  "error": "Missing required product fields"
+}
+```
+
+## Pagination, Filtering, and Search
+
+The `GET /api/products` endpoint supports:
+
+- **Pagination**: Use `page` and `limit` query parameters to control results.
+  - Example: `/api/products?page=2&limit=5`
+- **Filtering by Category**: Use the `category` query parameter to filter products by category.
+  - Example: `/api/products?category=electronics`
+- **Search by Name**: Use the `search` query parameter to search for products by name (case-insensitive, partial match).
+  - Example: `/api/products?search=phone`
+- All features can be combined:
+  - Example: `/api/products?category=electronics&search=phone&page=1&limit=2`
+
+### Example Response
+```
+{
+  "page": 1,
+  "limit": 2,
+  "total": 1,
+  "products": [
+    {
+      "id": "2",
+      "name": "Smartphone",
+      "description": "Latest model with 128GB storage",
+      "price": 800,
+      "category": "electronics",
+      "inStock": true
+    }
+  ]
+}
+```
+
+## Error Handling
+
+The API implements comprehensive error handling:
+
+- **404 Not Found**: Returned when a requested product does not exist.
+- **400 Bad Request**: Returned when required fields are missing in POST or PUT requests.
+- **401 Unauthorized**: Returned when the `x-api-key` header is missing or invalid.
+- **500 Internal Server Error**: Returned for unexpected server errors. All errors are logged to the console.
+
+### Example: 404 Not Found
+```
+GET /api/products/999
+x-api-key: my-secret-key
+
+Response:
+{
+  "error": "Product not found"
+}
+```
+
+### Example: 401 Unauthorized
+```
+GET /api/products
+x-api-key: wrong-key
+
+Response:
+{
+  "error": "Unauthorized: Invalid or missing API key"
+}
+```
+
+### Example: 500 Internal Server Error
+If an unexpected error occurs, the API responds with:
+```
+{
+  "error": "Internal Server Error"
+}
+```
+
 ## Submission
 
 Your work will be automatically submitted when you push to your GitHub Classroom repository. Make sure to:
@@ -60,4 +165,4 @@ Your work will be automatically submitted when you push to your GitHub Classroom
 
 - [Express.js Documentation](https://expressjs.com/)
 - [RESTful API Design Best Practices](https://restfulapi.net/)
-- [HTTP Status Codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) 
+- [HTTP Status Codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)

@@ -40,27 +40,55 @@ let products = [
   }
 ];
 
+// --- Custom Middleware ---
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Simple authentication middleware (expects 'x-api-key' header)
+app.use((req, res, next) => {
+  const apiKey = req.header('x-api-key');
+  if (!apiKey || apiKey !== 'my-secret-key') {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing API key' });
+  }
+  next();
+});
+
+// Validation middleware for product creation and update
+function validateProduct(req, res, next) {
+  const { name, description, price, category, inStock } = req.body;
+  if (!name || !description || price == null || !category || inStock == null) {
+    return res.status(400).json({ error: 'Missing required product fields' });
+  }
+  next();
+}
+
 // Root route
 app.get('/', (req, res) => {
   res.send('Welcome to the Product API! Go to /api/products to see all products.');
 });
 
-// TODO: Implement the following routes:
-// GET /api/products - Get all products
-// GET /api/products/:id - Get a specific product
-// POST /api/products - Create a new product
-// PUT /api/products/:id - Update a product
-// DELETE /api/products/:id - Delete a product
+// Import product routes
+const productRoutes = require('./routes');
 
-// Example route implementation for GET /api/products
-app.get('/api/products', (req, res) => {
-  res.json(products);
+// Use product routes with validation middleware for POST and PUT
+app.use('/api/products', (req, res, next) => {
+  if ((req.method === 'POST' || req.method === 'PUT') && (req.path === '/' || /^\/[\w-]+$/.test(req.path))) {
+    return validateProduct(req, res, next);
+  }
+  next();
+}, productRoutes);
+
+// --- Error Handling Middleware ---
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
-
-// TODO: Implement custom middleware for:
-// - Request logging
-// - Authentication
-// - Error handling
 
 // Start the server
 app.listen(PORT, () => {
@@ -68,4 +96,4 @@ app.listen(PORT, () => {
 });
 
 // Export the app for testing purposes
-module.exports = app; 
+module.exports = app;
